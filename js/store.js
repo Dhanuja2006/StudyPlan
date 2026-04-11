@@ -15,8 +15,8 @@ export const store = {
   async fetchInitialData() {
     try {
       const [subsRes, tasksRes] = await Promise.all([
-        fetch('http://localhost:3000/api/subjects'),
-        fetch('http://localhost:3000/api/tasks')
+        fetch('/api/subjects'),
+        fetch('/api/tasks')
       ]);
       this.subjects = await subsRes.json();
       this.tasks = await tasksRes.json();
@@ -28,14 +28,14 @@ export const store = {
 
   async addTasks(newTasks) {
     try {
-      const res = await fetch('http://localhost:3000/api/tasks', {
+      const res = await fetch('/api/tasks', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(newTasks)
       });
       if (res.ok) {
         // reload tasks
-        const tasksRes = await fetch('http://localhost:3000/api/tasks');
+        const tasksRes = await fetch('/api/tasks');
         this.tasks = await tasksRes.json();
         this.notify();
       }
@@ -52,7 +52,7 @@ export const store = {
       task.status = newStatus;
       this.notify();
       try {
-        await fetch(`http://localhost:3000/api/tasks/${taskId}`, {
+        await fetch(`/api/tasks/${taskId}`, {
           method: 'PUT',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ status: newStatus })
