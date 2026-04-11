@@ -98,7 +98,7 @@ Text: "${text}"`;
         contents: prompt
       });
       
-      let rawText = response.text().trim();
+      let rawText = (typeof response.text === 'function' ? response.text() : response.text).trim();
       if(rawText.startsWith('\`\`\`json')){
         rawText = rawText.replace(/\`\`\`json/g, '').replace(/\`\`\`/g, '').trim();
       } else if (rawText.startsWith('\`\`\`')) {
