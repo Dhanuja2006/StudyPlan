@@ -9,7 +9,7 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
-// Static folders
+// Static
 app.use('/css', express.static(path.join(__dirname, 'css')));
 app.use('/js', express.static(path.join(__dirname, 'js')));
 app.use(express.static(__dirname));
@@ -36,7 +36,7 @@ app.get('/api/tasks', (req, res) => {
   });
 });
 
-// ================= ADD TASKS (FIXED) =================
+// ================= ADD TASKS (FINAL FIX) =================
 app.post('/api/tasks', (req, res) => {
   try {
     const tasks = Array.isArray(req.body) ? req.body : [req.body];
@@ -60,9 +60,9 @@ app.post('/api/tasks', (req, res) => {
 
     tasks.forEach(t => {
 
-      // VALIDATION
-      if (!t.title || !t.due_at) {
-        errors.push({ task: t, error: "Missing title or due date" });
+      // ================= VALIDATION =================
+      if (!t.title || !t.due_at || !t.subject_id) {
+        errors.push({ task: t, error: "Missing title, subject or due date" });
         pending--;
 
         if (pending === 0) {
@@ -79,10 +79,13 @@ app.post('/api/tasks', (req, res) => {
         return;
       }
 
-      // DUPLICATE CHECK
+      // ================= DUPLICATE CHECK =================
       db.get(
-        `SELECT * FROM tasks WHERE title = ? AND due_at = ?`,
-        [t.title, t.due_at],
+        `SELECT * FROM tasks 
+         WHERE LOWER(title) = LOWER(?) 
+         AND subject_id = ?
+         AND DATE(due_at) = DATE(?)`,
+        [t.title, t.subject_id, t.due_at],
         (err, existing) => {
 
           if (err) {
@@ -91,13 +94,13 @@ app.post('/api/tasks', (req, res) => {
           else if (existing) {
             duplicates.push({
               title: t.title,
-              due_at: t.due_at
+              due_at: t.due_at,
+              subject_id: t.subject_id
             });
           } 
           else {
             const id = 'task_' + Date.now() + Math.random().toString(36).substr(2, 5);
 
-            // SAFE INSERT
             stmt.run(
               id,
               t.subject_id,
@@ -119,7 +122,7 @@ app.post('/api/tasks', (req, res) => {
 
           pending--;
 
-          // FINAL RESPONSE
+          // ================= FINAL RESPONSE =================
           if (pending === 0) {
             stmt.finalize((finalErr) => {
               if (finalErr) {
@@ -200,17 +203,8 @@ app.post('/api/extract', async (req, res) => {
   if (ai) {
     try {
       const prompt = `
-You are an AI study planner. Extract deadlines and tasks from the following unstructured text.
-Current Date: 2026-04-11T12:00:00Z
-Return ONLY structured JSON:
-[{
-  "subject_name": "string",
-  "title": "string",
-  "due_at": "ISO date",
-  "priority": "high|medium|low",
-  "confidence_score": number,
-  "notes": "string"
-}]
+You are an AI study planner. Extract deadlines and tasks.
+Return ONLY JSON array.
 Text: "${text}"
 `;
 
@@ -239,7 +233,6 @@ Text: "${text}"
     }
 
   } else {
-    // Mock fallback
     setTimeout(() => {
       res.json([{
         subject_name: "General",
